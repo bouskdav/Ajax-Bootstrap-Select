@@ -99,6 +99,14 @@ $.fn.ajaxSelectPicker.defaults = {
      * Invoke a request for empty search values.
      */
     emptyRequest: false,
+    
+    /**
+     * @member $.fn.ajaxSelectPicker.defaults
+     * @cfg {Boolean} ajaxWhenOpened = false
+     * @markdown
+     * Invoke a request when select opens.
+     */
+    ajaxWhenOpened: false,
 
     /**
      * @member $.fn.ajaxSelectPicker.defaults
