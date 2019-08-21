@@ -384,6 +384,62 @@ AjaxBootstrapSelect.prototype.init = function () {
             });
         }, plugin.options.requestDelay || 300);
     });
+    
+    // Bind this plugin's event.
+    if (plugin.options.ajaxWhenOpened) {
+        this.selectpicker.$element.on('show.bs.select', function (e) {
+            var query = '';
+
+            plugin.log(plugin.LOG_DEBUG, 'Bind event fired: "' + plugin.options.bindEvent + '", keyCode:', e.keyCode, e);
+
+            // Dynamically ignore the "enter" key (13) so it doesn't
+            // create an additional request if the "cache" option has
+            // been disabled.
+            if (!plugin.options.cache) {
+                plugin.options.ignoredKeys[13] = 'enter';
+            }
+
+            // Don't process ignored keys.
+            if (plugin.options.ignoredKeys[e.keyCode]) {
+                plugin.log(plugin.LOG_DEBUG, 'Key ignored.');
+                return;
+            }
+
+            // Clear out any existing timer.
+            clearTimeout(requestDelayTimer);
+
+            // Store the query.
+            plugin.previousQuery = plugin.query;
+            plugin.query = query;
+
+            //// Return the cached results, if any.
+            //if (plugin.options.cache && e.keyCode !== 13) {
+            //    var cache = plugin.list.cacheGet(plugin.query);
+            //    if (cache) {
+            //        plugin.list.setStatus(!cache.length ? plugin.t('statusNoResults') : '');
+            //        plugin.list.replaceOptions(cache);
+            //        plugin.log(plugin.LOG_INFO, 'Rebuilt options from cached data.');
+            //        return;
+            //    }
+            //}
+
+            requestDelayTimer = setTimeout(function () {
+                // Abort any previous requests.
+                if (plugin.lastRequest && plugin.lastRequest.jqXHR && $.isFunction(plugin.lastRequest.jqXHR.abort)) {
+                    plugin.lastRequest.jqXHR.abort();
+                }
+
+                // Create a new request.
+                plugin.request = new window.AjaxBootstrapSelectRequest(plugin);
+
+                // Store as the previous request once finished.
+                plugin.request.jqXHR.always(function () {
+                    plugin.lastRequest = plugin.request;
+                    plugin.request = false;
+                });
+            }, plugin.options.requestDelay || 300);
+        });
+    }
 };
 
 /**
@@ -683,7 +739,7 @@ AjaxBootstrapSelectList.prototype.build = function (data) {
 
         // Set various properties.
         $option.val(item.value).text(item.text).attr('title', item.text);
-        if (item['class'].length) {
+        if (item['class'] != null && item['class'].length) {
             $option.attr('class', item['class']);
         }
         if (item.disabled) {
@@ -1333,6 +1389,14 @@ $.fn.ajaxSelectPicker.defaults = {
      * Invoke a request for empty search values.
      */
     emptyRequest: false,
+    
+    /**
+     * @member $.fn.ajaxSelectPicker.defaults
+     * @cfg {Boolean} ajaxWhenOpened = false
+     * @markdown
+     * Invoke a request when select opens.
+     */
+    ajaxWhenOpened: false,
 
     /**
      * @member $.fn.ajaxSelectPicker.defaults
